@@ -1,0 +1,14 @@
+BoldAsFont=-1
+FontHeight=11
+Locale=C
+Charset=UTF-8
+BackgroundColour=0,0,0
+ForegroundColour=255,255,255
+CursorType=block
+Font=Consolas
+Columns=100
+Rows=30
+ComposeKey=alt
+ConfirmExit=no
+BackspaceSendsBS=yno
+DeleteSendsDEL=no

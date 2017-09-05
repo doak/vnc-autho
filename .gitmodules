@@ -1,0 +1,7 @@
+[submodule "bin/lib-bash"]
+	path = bin/lib-bash
+	url = ../lib-bash.git
+[submodule "add-on"]
+	path = add-on
+	url = ./
+	branch = big/add-on

@@ -1,0 +1,6 @@
+StrictHostKeyChecking true
+GlobalKnownHostsFile etc/ssh_known_hosts
+UserKnownHostsFile /dev/null
+IdentityFile etc/ssh_key
+ExitOnForwardFailure true
+AddKeysToAgent true

@@ -1,0 +1,11 @@
+/etc/host.conf
+
+/etc/ssh_key
+/etc/ssh_key.pub
+/etc/ssh_known_hosts
+
+/etc/ssh_host_*_key
+/etc/ssh_host_*_key.pub
+/etc/ssh_authorized_keys
+
+/vnc-autho*

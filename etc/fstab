@@ -1,0 +1,9 @@
+# /etc/fstab
+#
+#    This file is read once by the first process in a Cygwin process tree.
+#    To pick up changes, restart all Cygwin processes.  For a description
+#    see https://cygwin.com/cygwin-ug-net/using.html#mount-table
+
+# Workaround to avoid Cygwin's ACL implementation to corrupt ACL entries of directories (and therefore executables) which, in that case, cannot be executed anymore.
+# Please refer to http://cygwin.1069669.n5.nabble.com/Issues-with-ACL-settings-after-updating-to-the-latest-cygwin-dll-tp124123p124324.html for details.
+/ / auto override,bind,noacl 0 0

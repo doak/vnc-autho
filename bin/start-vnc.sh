@@ -4,8 +4,11 @@ COPYRIGHT="Copyright © 2017 Korbinian Demmel"
 LICENSE="This program is distributed under the terms of the GNU General Public License version 3 (GPLv3)."
 
 BASEDIR="`dirname "$0"`/.."
+HISTFILE="./etc/hostspec.history"
+HISTCONTROL="erasedups:ignorespace"
 RESTART_DELAY="1"
-CMD_PIPE="tmp/ssh_cmd_pipe"
+TIMEOUT_FAILURES="0.3"
+CMD_PIPE="./tmp/ssh_cmd_pipe.$$"
 
 vncserver_variants=(
     "winvnc4"
@@ -111,7 +114,8 @@ while test -n "$1"; do
         "--vnc"|\
         "--ssh")
             get_args '$+$' '^--' "$@" &&
-            shift $__
+            shift $__ ||
+            fail "Incomplete option."
             ;;
         "--")
             shift
@@ -261,9 +265,7 @@ tunnel() {
     shift
 
     verb "Creating SSH tunnel to '$SSH_USER@$SSH_HOST:$SSH_PORT' ($@) ..." &&
-    while ! $D ssh_tunnel "$SSH_USER@$SSH_HOST" "$vnc_conf" -p "$SSH_PORT" "$@"; do
-        sleep $RESTART_DELAY
-    done
+    ssh_tunnel "$SSH_USER@$SSH_HOST" "$vnc_conf" -p "$SSH_PORT" "$@"
 }
 
 connect() {
@@ -458,8 +460,6 @@ start_vnc() {
             cat "$CMD_PIPE" |
             while read -a line; do
                 verify_cmd "$arg_command" "${line[@]}" || exit $?
-                #FIXME: Wait for some to let listening VNC get started.
-                sleep $RESTART_DELAY
                 # Connect through tunnel.
                 "vnc${line[0]}_mux" CONNECT "${line[1]}" "${arg_vnc[@]}" ||
                 warn "No connection to VNC $rezi."
@@ -493,24 +493,23 @@ start_vnc() {
         ssh_cache &&
         establish_ssh_gw &&
         while true; do
-            local mark=`mark_cleanup`
             # Listen and establish tunnel.
-            tunnel true -R "$RPORT:localhost:$LPORT" "${arg_ssh[@]}" &&
-            while true; do
-                #FIXME: It would be better to start listening VNC first asynchronously but check if it fails. As this is more complicated it is done the other way round.
-                echo "$rezi" "$RPORT" | connect || {
-                    warn "SSH connection lost."
-                    break
-                } &&
-                "vnc${arg_command}_mux" LISTEN "$LPORT" "${arg_vnc[@]}" || {
-                    warn "Failed to start VNC '$arg_command'."
-                    # Force to review connection arguments.
-                    unset hostspec
-                    break
-                }
-                sleep $RESTART_DELAY
-            done
-            rewind_cleanup $mark
+            if tunnel true -R "$RPORT:localhost:$LPORT" "${arg_ssh[@]}"; then
+                # Start listening server/viewer and wait '$TIMEOUT_FAILURES' for failures. Continue afterwards.
+                sleep $TIMEOUT_FAILURES &
+                "vnc${arg_command}_mux" LISTEN "$LPORT" "${arg_vnc[@]}" &
+                if ! wait -n; then
+                    fail "Failed to start VNC '$arg_command'."
+                else
+                    echo "$rezi" "$RPORT" | connect || {
+                        warn "SSH connection lost."
+                        sleep $RESTART_DELAY
+                        continue
+                    }
+                fi
+                wait -n
+            fi
+            sleep $RESTART_DELAY
         done
     fi
 }
@@ -524,7 +523,9 @@ fail "Failed to parse <hostspec>."
 
 history -r
 push_cleanup history -w
+push_cleanup history -n
 
+#FIXME: Why are both traps (here and in 'fail()') neccessary? './start-vnc-SERVER.sh' would fail to quit if VNC connection has been established and SIGINT is received. See also https://gist.github.com/doak/08b69c500c91a7fade9f2c61882c93b4 for some tests regarding signal handling.
 trap "exit" SIGINT
 case "$arg_command" in
     "server"|\

@@ -79,13 +79,18 @@ EOF
     fi
 }
 
+childs() {
+    local parent="$1"
+    ps --no-headers -opid --ppid "$parent"
+}
+
 killtree() {
     local parent="$1"
-    local pids=(`ps --no-headers -opid --ppid "$parent"`)
+    local childs=(`childs "$parent"`)
 
-    debug CHILDS `print_values_quoted "${pids[@]}"`
+    debug CHILDS `print_values_quoted "${childs[@]}"`
     $D kill "$parent" 2>/dev/null
-    for pid in "${pids[@]}"; do
+    for pid in "${childs[@]}"; do
         killtree "$pid"
     done
 }

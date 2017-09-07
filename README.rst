@@ -74,3 +74,12 @@ Ensure that your screen will **not** be shared:
 Use a remote SSH server as a gateway:
     * Execute both, viewer and server, with the argument ``--ssh-gw <hostspec>``. Both users need permissions to forward ports using their SSH account.
     * The gateway can be configured statically with ``arg_ssh_gw=<hostspec>`` in ``./etc/host.conf`` if needed.
+
+
+Trouble Shooting
+----------------
+
+Error: ``Permission denied (publickey).``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Beside the obvious fact that host *A* currently uses an SSH client key (``./etc/ssh_key``) which is not configured to log-in into SSH server running on host *B* (``./etc/ssh_authorized_keys``), there is one more source of fault: *sshd* accepts keys and related data only in "safe" directories, this affects the whole path to ``./etc``. The usual permissions on directory ``/tmp`` are not allowed for example, hence *vnc-autho* can not live below that one.
